@@ -1,9 +1,11 @@
 # YOLOv5 Streamlit Object Detection App
 
 This repository contains a Streamlit application for object detection using YOLOv5. The application is capable of processing both image and video inputs. It can easily be deployed in a Docker environment.
-
+## NOW ADDED POSE ESTIMATION!
+![Banner](example-pose.png)
 ## Contents
 - [YOLOv5 Streamlit Object Detection App](#yolov5-streamlit-object-detection-app)
+  - [NOW ADDED POSE ESTIMATION!](#now-added-pose-estimation)
   - [Contents](#contents)
   - [Installation](#installation)
   - [Usage](#usage)
@@ -51,6 +53,7 @@ For videos:
 Remember that processing videos, especially long ones, may take a while due to the frame-by-frame object detection.
 
 ![Banner](example.png)
+
 
 ## License
 

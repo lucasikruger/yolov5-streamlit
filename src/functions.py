@@ -7,6 +7,7 @@ import subprocess
 import shutil
 import datetime
 from pathlib import Path
+from ultralytics import YOLO
 
 cocoClassesLst = ["person","bicycle","car","motorcycle","airplane","bus","train","truck","boat","traffic light","fire hydrant","stop sign","parking meter","bench","bird","cat", \
     "dog","horse","sheep","cow","elephant","bear","zebra","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite","baseball bat",\
@@ -23,13 +24,16 @@ def load_model(model_name):
     # Check which model was selected and load corresponding model path
     if model_name == 'yolov5s':
         model_path = 'yolov5s.pt'
-    # Set the device to CUDA if available, else CPU
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f'Device: {device}')
-    # Load the model using the Ultralytics YOLOv5 PyTorch Hub
-    model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
-    # Send the model to the device
-    model = model.to(device)
+        # Set the device to CUDA if available, else CPU
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(f'Device: {device}')
+        # Load the model using the Ultralytics YOLOv5 PyTorch Hub
+        model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
+        # Send the model to the device
+        model = model.to(device)
+    elif model_name == 'yolov8n-pose':
+            model_path = 'yolov8n-pose.pt'
+            model = YOLO(model_path)
     return model
 
 # Function to save an image to a specified path
@@ -54,19 +58,23 @@ def convert_video(path):
     shutil.move(temp_path, path)
 
 # Function to perform inference on a frame using a specified model and selected classes
-def inference(frame, model, wanted_classes, selected_confidence):
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    results = model(frame_rgb)
-    # Filter out unwanted detections
-    selected_results = []
-    for *box, conf, cls in results.xyxy[0]:
-        if ((wanted_classes is None) or (int(cls) in wanted_classes)) and conf > selected_confidence:
-            selected_results.append((*box, conf, cls))
-    results.xyxy[0] = torch.tensor(selected_results) if selected_results else torch.zeros((0,6))
-    rendered = results.render()
-    frame_bgr = cv2.cvtColor(rendered[0], cv2.COLOR_RGB2BGR) if len(selected_results) > 0 else frame
-    return frame_bgr
-
+def inference(frame, model, wanted_classes= None, selected_confidence=None, pose = False):
+    if not pose:
+        frame_rgb =  cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = model(frame_rgb)
+        # Filter out unwanted detections
+        selected_results = []
+        for *box, conf, cls in results.xyxy[0]:
+            if ((wanted_classes is None) or (int(cls) in wanted_classes)) and conf > selected_confidence:
+                selected_results.append((*box, conf, cls))
+        results.xyxy[0] = torch.tensor(selected_results) if selected_results else torch.zeros((0,6))
+        rendered = results.render()
+        frame_bgr = cv2.cvtColor(rendered[0], cv2.COLOR_RGB2BGR) if len(selected_results) > 0 else frame
+        return frame_bgr
+    else:
+        res = model(frame)
+        res_plotted = res[0].plot()
+        return res_plotted
 # Function to select classes from the model
 def select_classes(model_source):
     # Assuming cocoClassesLst is defined
@@ -81,7 +89,7 @@ def select_classes(model_source):
     return selected_classes
 
 # Function to process a video
-def process_video(input_path, output_path, model, wanted_classes, selected_confidence):
+def process_video(input_path, output_path, model, wanted_classes, selected_confidence, pose = False):
     print('Processing video')
     # Load the video
     cap = cv2.VideoCapture(input_path)
@@ -106,7 +114,7 @@ def process_video(input_path, output_path, model, wanted_classes, selected_confi
         ret, frame = cap.read()
         if not ret:
             break
-        frame_bgr = inference(frame, model, wanted_classes, selected_confidence)
+        frame_bgr = inference(frame, model, wanted_classes, selected_confidence, pose)
         out.write(frame_bgr)
 
         # Update the progress bar
