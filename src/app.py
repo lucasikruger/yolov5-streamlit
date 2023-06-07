@@ -13,18 +13,16 @@ def main():
     st.image(img, use_column_width=True)
     # Set the title of the app
     st.title("YOLOv5 Object Detection")
+
     # Create a dropdown select box to choose the model
-    model_source = st.selectbox('Select your model', ['yolov5s', 'yolov8n-pose'])
+    model_source = st.selectbox('Select your model', ['yolov5s'])
 
-    if model_source == 'yolov5s':
-        # Create a multi-select box to select the classes
-        selected_classes = select_classes(model_source)
+    # Create a multi-select box to select the classes
+    selected_classes = select_classes(model_source)
 
-        # Create a slider to select the minimum confidence score threshold
-        selected_confidence = st.slider('Min Confidence Score Threshold', min_value = 0.0, max_value = 1.0, value = 0.4)
-    else: 
-        selected_classes = None
-        selected_confidence = None
+    # Create a slider to select the minimum confidence score threshold
+    selected_confidence = st.slider('Min Confidence Score Threshold', min_value = 0.0, max_value = 1.0, value = 0.4)
+
     # Create a file uploader to upload the image or video file
     uploaded_file = st.file_uploader("Choose an image or video...", type=["jpg", "jpeg", "png", "mp4"])
 
@@ -51,7 +49,7 @@ def main():
                 with st.spinner('Detecting...'):
                     run_folder = create_run_folder('images')
                     save_image(orig_image, f'{run_folder}/{uploaded_file.name}')
-                    image = inference(orig_image, model, selected_classes, selected_confidence, model_source == 'yolov8n-pose')
+                    image = inference(orig_image, model, selected_classes, selected_confidence)
                     save_image(image, f'{run_folder}/output.jpg')
                     st.image(image, caption='Detected Objects.', use_column_width=True)
 
@@ -72,7 +70,7 @@ def main():
                 st.write("Original:")
                 st.video(input_path)
                 with st.spinner('Detecting...'):
-                    process_video(input_path, output_path, model, selected_classes, selected_confidence, model_source == 'yolov8n-pose')
+                    process_video(input_path, output_path, model, selected_classes, selected_confidence)
                     st.write("Output:")
                     st.video(output_path)
 
